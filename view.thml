@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
+    <style>
+      body { font-family: "Microsoft JhengHei", -apple-system, sans-serif; text-align: center; padding: 5px 12px; background-color: #f4f7f6; color: #333; margin: 0; }
+      .container { background: white; padding: 10px 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.08); width: 100%; max-width: 480px; box-sizing: border-box; }
+      h2 { color: #2c3e50; margin: 5px 0; font-size: 1.3rem; }
+      .date-count-badge { background: #28a745; color: white; padding: 5px 14px; border-radius: 20px; font-weight: bold; font-size: 13px; display: inline-block; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(40,167,69,0.15); }
+      .count-divider { margin: 0 8px; opacity: 0.6; }
+      .tabs { display: flex; gap: 4px; margin-bottom: 8px; width: 100%; }
+      .tab-btn { flex: 1; padding: 8px 2px; background: #e9ecef; border: 1px solid #ccc; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; color: #495057; -webkit-tap-highlight-color: transparent; }
+      .tab-btn.active { background: #28a745; color: white; border-color: #28a745; }
+      .dance-list { border-top: 1px solid #eee; padding-top: 5px; }
+      .list-header { display: flex; background: #343a40; color: white; font-weight: bold; padding: 8px 0; border-radius: 6px; font-size: 13px; text-align: center; }
+      .row-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #efefef; min-height: 45px; box-sizing: border-box; }
+      .col-seq { width: 32px; font-weight: bold; color: #28a745; text-align: center; font-size: 14px; flex-shrink: 0; }
+      .col-text-dance { flex: 1.6; padding: 0 4px; min-width: 0; text-align: left; font-size: 14px; font-weight: bold; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; color: #2c3e50; }
+      .col-text-user { flex: 0.9; padding: 0 4px; min-width: 0; text-align: left; font-size: 13px; color: #666; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+      .col-video-actions { width: 95px; display: flex; gap: 4px; justify-content: center; flex-shrink: 0; }
+      .video-go-btn { display: inline-block; width: 44px; height: 28px; line-height: 26px; border-radius: 6px; font-size: 12px; font-weight: bold; text-decoration: none; text-align: center; border: 1px solid #ccc; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+      .video-go-btn.has-v1 { background-color: #ffc107; border-color: #ffc107; color: #212529; box-shadow: 0 2px 4px rgba(255,193,7,0.2); }
+      .video-go-btn.has-v2 { background-color: #17a2b8; border-color: #17a2b8; color: white; box-shadow: 0 2px 4px rgba(23,162,184,0.2); }
+      .video-go-btn.disabled { background-color: #f8f9fa; border-color: #e9ecef; color: #ced4da; cursor: not-allowed; pointer-events: none; }
+      #statusBar { font-weight: bold; font-size: 12px; color: #666; margin-bottom: 6px; height: 16px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>💃 土風舞社課最新舞序看板 🕺</h2>
+      <div><span class="date-count-badge"><span id="lessonDate">📅 社課日期：載入中...</span><span class="count-divider">|</span><span id="danceCount">🔥 已排：.. 首</span></span></div>
+      <div id="statusBar">正在載入最新舞單與教學影片...</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(1)">1-10首</button>
+        <button class="tab-btn" onclick="switchTab(2)">11-20首</button>
+        <button class="tab-btn" onclick="switchTab(3)">21-30首</button>
+        <button class="tab-btn" onclick="switchTab(4)">31-40首</button>
+      </div>
+      <div class="dance-list">
+        <div class="list-header">
+          <div style="width:32px;">序</div>
+          <div style="flex:1.6; text-align:left; padding-left:4px;">預定社課舞名</div>
+          <div style="flex:0.9; text-align:left; padding-left:4px;">點舞者</div>
+          <div style="width:95px;">影片練習</div>
+        </div>
+        <div id="listBody"></div>
+      </div>
+    </div>
+    <script>
+      let globalList = []; let currentTab = 1;
+      window.onload = function() {
+        google.script.run.withSuccessHandler(function(res) {
+          document.getElementById('lessonDate').innerText = "📅 社課日期：" + res.date; globalList = res.list; renderTab();
+          document.getElementById('statusBar').innerText = "💡 提示：點擊右側黃色或藍色按鈕可直接跳轉看練舞影片！";
+        }).getDanceList();
+      };
+      function renderTab() {
+        let activeCount = 0; globalList.forEach(item => { if (item.danceName && item.danceName.trim() !== "") activeCount++; });
+        document.getElementById('danceCount').innerText = `🔥 已排：${activeCount}/40 首`;
+        const container = document.getElementById('listBody'); container.innerHTML = ''; const startIdx = (currentTab - 1) * 10;
+        for (let i = 0; i < 10; i++) {
+          const absoluteIdx = startIdx + i; const item = globalList[absoluteIdx]; const row = document.createElement('div'); row.className = 'row-item';
+          const hasV1 = item.video1 && item.video1.trim() !== ""; const hasV2 = item.video2 && item.video2.trim() !== "";
+          row.innerHTML = `
+            <div class="col-seq">${absoluteIdx + 1}</div>
+            <div class="col-text-dance">${item.danceName ? item.danceName : '<span style="color:#ccc; font-weight:normal; font-size:13px;">(暫無舞曲)</span>'}</div>
+            <div class="col-text-user">${item.danceName ? (item.userName || '匿名') : ''}</div>
+            <div class="col-video-actions">
+              <a class="video-go-btn ${hasV1 ? 'has-v1' : 'disabled'}" href="${hasV1 ? item.video1 : '#'}" target="_blank">${hasV1 ? '🎬 1' : '無'}</a>
+              <a class="video-go-btn ${hasV2 ? 'has-v2' : 'disabled'}" href="${hasV2 ? item.video2 : '#'}" target="_blank">${hasV2 ? '🎬 2' : '無'}</a>
+            </div>
+          `;
+          container.appendChild(row);
+        }
+      }
+      function switchTab(tabNum) { currentTab = tabNum; const btns = document.querySelectorAll('.tab-btn'); btns.forEach((btn, i) => { if (i === tabNum - 1) btn.classList.add('active'); else btn.classList.remove('active'); }); renderTab(); }
+    </script>
+  </body>
+</html>

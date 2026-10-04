@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
+    <style>
+      body { font-family: "Microsoft JhengHei", -apple-system, sans-serif; text-align: center; padding: 5px 12px; background-color: #f4f7f6; color: #333; margin: 0; }
+      .container { background: white; padding: 10px 15px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.08); width: 100%; max-width: 500px; box-sizing: border-box; }
+      h2 { color: #2c3e50; margin: 5px 0; font-size: 1.3rem; }
+      .date-count-badge { background: #007bff; color: white; padding: 5px 14px; border-radius: 20px; font-weight: bold; font-size: 13px; display: inline-block; margin-bottom: 5px; box-shadow: 0 2px 6px rgba(0,123,255,0.15); }
+      .count-divider { margin: 0 8px; opacity: 0.6; }
+      .tabs { display: flex; gap: 4px; margin-bottom: 8px; width: 100%; }
+      .tab-btn { flex: 1; padding: 8px 2px; background: #e9ecef; border: 1px solid #ccc; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; color: #495057; -webkit-tap-highlight-color: transparent; }
+      .tab-btn.active { background: #007bff; color: white; border-color: #007bff; }
+      .dance-list { border-top: 1px solid #eee; padding-top: 5px; }
+      .list-header { display: flex; background: #343a40; color: white; font-weight: bold; padding: 8px 0; border-radius: 6px; font-size: 14px; text-align: center; }
+      .row-item { display: flex; align-items: center; padding: 5px 0; border-bottom: 1px solid #efefef; }
+      .col-seq { width: 32px; font-weight: bold; color: #007bff; text-align: center; font-size: 14px; flex-shrink: 0; }
+      .col-input-dance { flex: 1.7; padding: 0 2px; min-width: 0; }
+      .col-input-user { flex: 0.9; padding: 0 2px; min-width: 0; }
+      .col-input-dance input, .col-input-user input { padding: 6px 4px; border: 1px solid #ddd; border-radius: 6px; width: 100%; box-sizing: border-box; font-size: 16px; -webkit-appearance: none; text-align: left; }
+      .col-input-dance input:focus, .col-input-user input:focus { border-color: #007bff; outline: none; background: #fafafa; }
+      .col-action-trigger { width: 50px; display: flex; justify-content: center; flex-shrink: 0; }
+      .btn-trigger-modal { background-color: #f0f7ff; border: 1px solid #007bff; color: #007bff; border-radius: 6px; padding: 0; font-size: 13px; font-weight: bold; cursor: pointer; width: 40px; height: 32px; line-height: 30px; -webkit-tap-highlight-color: transparent; margin: 0; display: inline-block; }
+      .btn-trigger-modal:active { background-color: #007bff; color: white; }
+      .save-box { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 450px; z-index: 99; }
+      .btn-save { padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 10px; font-size: 16px; width: 100%; font-weight: bold; box-shadow: 0 4px 10px rgba(40,167,69,0.3); cursor: pointer; }
+      .btn-save:active { background-color: #218838; }
+      #statusBar { font-weight: bold; font-size: 12px; color: #666; margin-bottom: 6px; height: 16px; }
+      .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; }
+      .modal-box { background: white; padding: 20px; border-radius: 16px; width: 85%; max-width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); text-align: center; animation: modalFadeIn 0.2s ease-out; }
+      .modal-title { font-size: 17px; font-weight: bold; color: #2c3e50; margin-bottom: 12px; }
+      .modal-select-wrapper { margin: 15px 0; }
+      .modal-select-wrapper select { padding: 10px; border: 2px solid #007bff; border-radius: 8px; width: 85%; font-size: 15px; font-weight: bold; color: #007bff; text-align: center; text-align-last: center; background: #f0f7ff; cursor: pointer; }
+      .modal-btns { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+      .modal-btn { padding: 10px 20px; font-size: 14px; font-weight: bold; border-radius: 10px; cursor: pointer; border: none; flex: 1; -webkit-tap-highlight-color: transparent; }
+      .modal-btn-cancel { background: #f0f0f0; color: #555; }
+      .modal-btn-confirm { background: #007bff; color: white; }
+      @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+    </style>
+  </head>
+  <body>
+    <div class="container" style="margin-bottom: 65px;">
+      <h2>⚙️ 點舞系統管理後台</h2>
+      <div>
+        <span class="date-count-badge">
+          <span id="lessonDate">📅 社課日期：載入中...</span>
+          <span class="count-divider">|</span>
+          <span id="danceCount">🔥 已點：.. 首</span>
+        </span>
+      </div>
+      <div id="statusBar">正在讀取最新舞單...</div>
+      
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(1)">1-10首</button>
+        <button class="tab-btn" onclick="switchTab(2)">11-20首</button>
+        <button class="tab-btn" onclick="switchTab(3)">21-30首</button>
+        <button class="tab-btn" onclick="switchTab(4)">31-40首</button>
+      </div>
+      
+      <div class="dance-list">
+        <div class="list-header">
+          <div style="width:32px;">序</div>
+          <div style="flex:1.7;">舞名 (容納8字)</div>
+          <div style="flex:0.9;">點舞者 (4字)</div>
+          <div style="width:50px;">調換</div>
+        </div>
+        <div id="listBody"></div>
+      </div>
+    </div>
+    
+    <div class="save-box">
+      <button id="saveBtn" class="btn-save" onclick="saveChanges()">💾 確認儲存管理員變更</button>
+    </div>
+    
+    <div id="swapModal" class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal-box" onclick="event.stopPropagation()">
+        <div id="modalTitle" class="modal-title">舞序位置對調</div>
+        <div style="font-size:14px; color:#666;">請選擇您想與第幾首進行位置對調？</div>
+        <div class="modal-select-wrapper">
+          <select id="modalSelectField"></select>
+        </div>
+        <div class="modal-btns">
+          <button class="modal-btn modal-btn-cancel" onclick="forceCloseModal()">取消</button>
+          <button class="modal-btn modal-btn-confirm" onclick="executeSwapFromModal()">確認更換</button>
+        </div>
+      </div>
+    </div>
+    <script>
+      let globalList = []; let currentTab = 1; let activeSourceIdx = null; 
+      
+      window.onload = function() {
+        google.script.run.withSuccessHandler(function(res) {
+          document.getElementById('lessonDate').innerText = "📅 社課日期：" + res.date; globalList = res.list; renderTab();
+          document.getElementById('statusBar').innerText = "💡 提示：輸入舞名或點「換」對調位置，完成後點下方儲存！";
+        }).getDanceList();
+      };
+      
+      function renderTab() {
+        let activeCount = 0; globalList.forEach(item => { if (item.danceName && item.danceName.trim() !== "") activeCount++; });
+        document.getElementById('danceCount').innerText = `🔥 已點：${activeCount}/40 首`;
+        const container = document.getElementById('listBody'); container.innerHTML = ''; const startIdx = (currentTab - 1) * 10;
+        for (let i = 0; i < 10; i++) {
+          const absoluteIdx = startIdx + i; const item = globalList[absoluteIdx]; const row = document.createElement('div'); row.className = 'row-item';
+          row.innerHTML = `
+            <div class="col-seq">${absoluteIdx + 1}</div>
+            <div class="col-input-dance"><input type="text" id="dance-${absoluteIdx}" value="${item.danceName || ''}" placeholder="容納8字" onchange="syncInputToMemory(${absoluteIdx})"></div>
+            <div class="col-input-user"><input type="text" id="user-${absoluteIdx}" value="${item.userName || ''}" placeholder="4字" onchange="syncInputToMemory(${absoluteIdx})"></div>
+            <div class="col-action-trigger"><button class="btn-trigger-modal" onclick="openSwapModal(${absoluteIdx})">換</button></div>
+          `;
+          container.appendChild(row);
+        }
+      }
+      
+      function syncInputToMemory(idx) {
+        const dInput = document.getElementById(`dance-${idx}`); const uInput = document.getElementById(`user-${idx}`);
+        if (dInput) globalList[idx].danceName = dInput.value.trim(); if (uInput) globalList[idx].userName = uInput.value.trim();
+        let activeCount = 0; globalList.forEach(item => { if (item.danceName && item.danceName.trim() !== "") activeCount++; });
+        document.getElementById('danceCount').innerText = `🔥 已點：${activeCount}/40 首`;
+      }
+      
+      function saveCurrentTabInputs() { const startIdx = (currentTab - 1) * 10; for (let i = 0; i < 10; i++) { syncInputToMemory(startIdx + i); } }
+      
+      function switchTab(tabNum) {
+        saveCurrentTabInputs(); currentTab = tabNum; const btns = document.querySelectorAll('.tab-btn');
+        btns.forEach((btn, i) => { if (i === tabNum - 1) btn.classList.add('active'); else btn.classList.remove('active'); }); renderTab();
+      }
+      
+      function openSwapModal(sourceIdx) {
+        saveCurrentTabInputs(); const sourceItem = globalList[sourceIdx];
+        if ((!sourceItem.danceName || sourceItem.danceName.trim() === "") && (!sourceItem.userName || sourceItem.userName.trim() === "")) { alert("💡 提示：您目前這一列是空的，請先輸入舞名再調整位置喔！"); return; }
+        activeSourceIdx = sourceIdx; const currentNum = sourceIdx + 1; document.getElementById('modalTitle').innerText = `🔄 目前選取：第 ${currentNum} 首`;
+        const selectField = document.getElementById('modalSelectField'); selectField.innerHTML = '';
+        for (let n = 1; n <= 40; n++) { if (n === currentNum) continue; selectField.innerHTML += `<option value="${n}">第 ${n} 首 ${globalList[n-1].danceName ? '['+globalList[n-1].danceName+']' : '(空白)'}</option>`; }
+        document.getElementById('swapModal').style.display = 'flex';
+      }
+      
+      function forceCloseModal() { document.getElementById('swapModal').style.display = 'none'; activeSourceIdx = null; }
+      function closeModal(e) { if (e.target.id === 'swapModal') forceCloseModal(); }
+      
+      function executeSwapFromModal() {
+        if (activeSourceIdx === null) return; const selectField = document.getElementById('modalSelectField'); const targetNum = parseInt(selectField.value, 10); const targetIdx = targetNum - 1; const originalNum = activeSourceIdx + 1;
+        const tempDance = globalList[activeSourceIdx].danceName; const tempUser = globalList[activeSourceIdx].userName; const tempV1 = globalList[activeSourceIdx].video1; const tempV2 = globalList[activeSourceIdx].video2;
+        globalList[activeSourceIdx].danceName = globalList[targetIdx].danceName; globalList[activeSourceIdx].userName = globalList[targetIdx].userName; globalList[activeSourceIdx].video1 = globalList[targetIdx].video1; globalList[activeSourceIdx].video2 = globalList[targetIdx].video2;
+        globalList[targetIdx].danceName = tempDance; globalList[targetIdx].userName = tempUser; globalList[targetIdx].video1 = tempV1; globalList[targetIdx].video2 = tempV2;
+        document.getElementById('statusBar').innerText = `🎯 成功將第 ${originalNum} 首與第 ${targetNum} 首位置互相對調！`;
+        const targetTab = Math.ceil(targetNum / 10); if (currentTab !== targetTab) { currentTab = targetTab; const btns = document.querySelectorAll('.tab-btn'); btns.forEach((btn, i) => { if (i === targetTab - 1) btn.classList.add('active'); else btn.classList.remove('active'); }); }
+        forceCloseModal(); renderTab();       
+      }
+      
+      function saveChanges() {
+        const btn = document.getElementById('saveBtn'); const status = document.getElementById('statusBar'); saveCurrentTabInputs(); btn.disabled = true; btn.innerText = "⏳ 雲端同步儲存中..."; status.innerText = "正在儲存變更，請稍候...";
+        google.script.run.withSuccessHandler(function() {
+          btn.disabled = false; btn.innerText = "💾 確認儲存變更"; status.innerText = "✅ 所有變更已成功同步至雲端試算表！";
+          setTimeout(() => { status.innerText = "💡 提示：輸入舞名或點「換」對調位置，完成後點下方儲存！"; }, 4000);
+        }).saveAllDances(globalList);
+      }
+    </script>
+  </body>
+</html>
